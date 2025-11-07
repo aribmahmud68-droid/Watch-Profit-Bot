@@ -1,0 +1,192 @@
+<!doctype html>
+
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ad Watch — Monetag Income (Telegram Mini App)</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- IMPORTANT: <script src='//libtl.com/sdk.js' data-zone='10151449' data-sdk='show_10151449'></script>. -->
+  <!-- Example placeholder API (for local testing) provided inside the script block. -->
+  <style>
+    :root{font-family:system-ui,-apple-system,'Noto Sans Bengali',sans-serif}
+    body{margin:0;background:#f6f8fa;color:#111;display:flex;align-items:center;justify-content:center;height:100vh}
+    .app{width:100%;max-width:420px;background:white;border-radius:12px;box-shadow:0 6px 24px rgba(15,23,42,.08);padding:18px}
+    header{display:flex;gap:12px;align-items:center}
+    .logo{width:56px;height:56px;background:linear-gradient(135deg,#7c3aed,#06b6d4);border-radius:12px;color:white;display:flex;align-items:center;justify-content:center;font-weight:700}
+    h1{font-size:18px;margin:0}
+    p.small{margin:6px 0 12px;font-size:13px;color:#475569}
+    .balance{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;background:#f1f5f9}
+    .btn{display:block;margin-top:14px;padding:12px;border-radius:10px;text-align:center;font-weight:600;cursor:pointer;border:0}
+    .primary{background:#0ea5a4;color:white}
+    .muted{background:#e2e8f0;color:#0f172a}
+    .tiny{font-size:12px;color:#64748b}
+    .ad-area{margin-top:14px;min-height:120px;border:1px dashed #e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center}
+    footer{margin-top:12px;text-align:center;color:#94a3b8;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Monetag Watch-to-Earn Telegram Mini App">
+    <header>
+      <div class="logo">TA</div>
+      <div>
+        <h1>Watch Profit Bot</h1>
+        <p class="small">প্রতিটি ভিউ দেখার পরে টাকা/কয়েন পেতে আপনার বটের সাথে সমন্বয় করুন।</p>
+      </div>
+    </header><div class="balance" id="balanceBox">
+  <div>
+    <div class="tiny">Your Telegram User</div>
+    <div id="userName">অনামি</div>
+  </div>
+  <div style="text-align:right">
+    <div class="tiny">ব্যালেন্স</div>
+    <div id="balance">৳0.00</div>
+  </div>
+</div>
+
+<p class="tiny" style="margin-top:12px">নোট: এই অ্যাপটি Telegram Web App হিসেবে রান করবে। "Watch Ad" চাপলে Monetag এড লোড করবে। এড সম্পন্ন হলে অ্যাপটি bot-কে ডেটা পাঠাবে যাতে আপনি ইনকাম ক্রেডিট করতে পারেন।</p>
+
+<div class="ad-area" id="adArea">এখানে এড লোড হবে</div>
+
+<button class="btn primary" id="watchBtn">এড দেখুন (Watch Ad)</button>
+<button class="btn muted" id="claimBtn" style="display:none">ইনকাম ক্লেইম করুন (Claim Reward)</button>
+
+<footer>
+  <div>বটের সাথে যোগাযোগ: <span id="botUsername">@YourBotUsername</span></div>
+</footer>
+
+  </div>  <script>
+    // --- Telegram Web App initialization ---
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Try to expand view inside Telegram
+
+    // Read user info passed by the bot (if provided)
+    const initDataUnsafe = tg.initDataUnsafe || {};
+    const user = initDataUnsafe.user || {};
+    document.getElementById('userName').textContent = (user.first_name || 'অজানা') + (user.username ? (' (@' + user.username + ')') : '');
+
+    // Basic local state
+    let balance = 0.00;
+    const balanceEl = document.getElementById('balance');
+    const watchBtn = document.getElementById('watchBtn');
+    const claimBtn = document.getElementById('claimBtn');
+    const adArea = document.getElementById('adArea');
+
+    function updateBalanceUI(){
+      balanceEl.textContent = '৳' + balance.toFixed(2);
+    }
+
+    updateBalanceUI();
+
+    // ==========================
+    // MONETAG INTEGRATION NOTE
+    // ==========================
+    // Replace the placeholder below with Monetag's real SDK snippet and zone/ad unit ID.
+    // Example (pseudo) Monetag usage:
+    // Monetag.init({zone: 'YOUR_ZONE_ID'});
+    // Monetag.on('adComplete', (info)=>{ /* reward user */ });
+
+    // For safety and offline testing we provide a simulated ad player called `10151449`.
+    // When you have the real Monetag SDK, remove 10151449 and call the real functions instead.
+
+    const MockMonetag = (function(){
+      function loadAd(container){
+        container.innerHTML = '';
+        const box = document.createElement('div');
+        box.style.padding = '12px';
+        box.style.textAlign = 'center';
+        box.innerHTML = '<div style="font-weight:700;margin-bottom:6px">কল্পিত এড (Mock Ad)</div>' +
+                        '<div class="tiny">৩ সেকেন্ডে এড শেষ হবে...</div>';
+        container.appendChild(box);
+        return new Promise(resolve=>{
+          // simulate a 3-second ad playback
+          let count = 3;
+          const timer = setInterval(()=>{
+            box.querySelector('.tiny').textContent = count + ' সেকেন্ড বাকি...';
+            count--;
+            if(count < 0){ clearInterval(timer); resolve({success:true, earned:0.10}); }
+          },1000);
+        });
+      }
+      return {loadAd};
+    })();
+
+    // --------------------------
+    // Actual watch flow
+    // --------------------------
+    watchBtn.addEventListener('click', async ()=>{
+      watchBtn.disabled = true;
+      watchBtn.textContent = 'লোড হচ্ছে...';
+      adArea.innerHTML = '';
+
+      try{
+        // TODO: Replace MockMonetag.loadAd with Monetag's ad load call
+        const result = await MockMonetag.loadAd(adArea);
+        if(result && result.success){
+          // Show claim button so user can confirm and notify the bot
+          claimBtn.style.display = 'block';
+          claimBtn.dataset.earned = result.earned || 0.00;
+          claimBtn.textContent = 'ইনকাম ক্লেইম করুন (৳' + (result.earned||0).toFixed(2) + ')';
+          watchBtn.textContent = 'এড দেখুন (Watch Ad)';
+        } else {
+          adArea.innerHTML = '<div class="tiny">এড দেখা হয়নি — অনুগ্রহ করে আবার চেষ্টা করুন</div>';
+          watchBtn.textContent = 'এড দেখুন (Watch Ad)';
+        }
+      }catch(err){
+        console.error('Ad error', err);
+        adArea.innerHTML = '<div class="tiny">এড লোড করতে সমস্যা হয়েছে।</div>';
+        watchBtn.textContent = 'এড দেখুন (Watch Ad)';
+      } finally{
+        watchBtn.disabled = false;
+      }
+    });
+
+    // When user claims reward, we send a message to the bot via sendData.
+    // The bot (server-side) must verify the claim (e.g., via Monetag server callback or its own record)
+    claimBtn.addEventListener('click', ()=>{
+      const earned = parseFloat(claimBtn.dataset.earned || '0');
+      // optimistic local credit
+      balance += earned;
+      updateBalanceUI();
+
+      // send data back to the bot so it can record/credit the user server-side
+      const payload = {
+        event: 'ad_reward_claim',
+        amount: earned,
+        timestamp: Date.now(),
+        // include any Monetag verification ids here (if available) e.g. monetag_impression_id
+      };
+
+      try{
+        // sendData is picked up by your bot. Your bot should verify the claim with Monetag server-to-server callbacks
+        tg.sendData(JSON.stringify(payload));
+
+        // give feedback to the user
+        claimBtn.style.display = 'none';
+        adArea.innerHTML = '<div class="tiny">রিকার্ড পাঠানো হয়েছে — আপনার বট মিলানোর পরে ব্যালেন্স দেখানো হবে।</div>';
+      }catch(e){
+        console.error('sendData failed', e);
+        adArea.innerHTML = '<div class="tiny">বট-কে ডেটা পাঠাতে ব্যর্থ। আর্কাইভ করুন এবং পরে পুনরায় চেষ্টা করুন।</div>';
+      }
+    });
+
+    // OPTIONAL: Listen for main button press from bot to close or other commands
+    tg.onEvent('mainButtonClicked', ()=>{
+      tg.close();
+    });
+
+    // Helpful: allow the bot to call Web App's setBackgroundColor or other settings by sending `initData` updates.
+
+    // ================
+    // DEPLOYMENT NOTES
+    // ================
+    /*
+      1) হোস্ট এই ফাইলকে HTTPS সার্ভারে (যেমন: https://example.com/telegram-mini/index.html)
+      2) BotFather এ গিয়ে আপনার বটের /setdomain অথবা Web Apps সেটিংসে URL দিন। (BotFather -> /setwebhook is different from Web App URL)
+      3) Monetag থেকে আপনাকে যে SDK অথবা ad unit ডান হবে তা এখানে যোগ করুন এবং MockMonetag যেটা আছে সেটা সরান।
+      4) Monetag-এ server-to-server verification (callback) enable করুন যাতে আপনার বট সার্ভার Monetag থেকে কনফার্মেশন নিয়ে ইউজারের ব্যালেন্স ক্রেডিট করে।
+      5) সিকিউরিটি: Telegram WebApp.sendData নির্ভরযোগ্য কিন্তু সব ক্রেডিট bot-side verification ছাড়া করবেন না — সার্ভার‑সাইড Monetag callback দিয়ে দরকারি ভেরিফিকেশন নিশ্চিত করুন।
+    */
+
+  </script></body>
+</html>
